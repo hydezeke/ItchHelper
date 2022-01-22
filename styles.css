@@ -1,0 +1,40 @@
+.ih_dash_search {
+    width: 100%;
+    margin-bottom: 10px;
+}
+.ih_filter_btn {
+    cursor:pointer;
+    display:inline-block;
+    margin-left: 5px;
+    
+}
+.ih_lightgrey {
+    background: #a6aaac;
+}
+.ih_darkgrey {
+    background: #9c9788;
+}
+.left_col {
+    opacity: 0;
+}
+.ih_filters {
+    text-align: right;
+    margin-bottom: 10px;
+}
+.ih_dash_search_input {
+    width: calc(100% - 30px);
+    --itchio_bg_color: var(--itchio_white_back);
+    --itchio-gutter_width: 40px;
+    --itchio_white_back: #111;
+    --itchio_warning_bg: #3f3421;
+    font-family: var(--itchio_default_font, Lato),sans-serif;
+    box-sizing: border-box;
+    flex: 1;
+    border: 1px solid #fff5;
+    padding: 4px 4px 4px 10px;
+    font-size: 14px;
+    height: 30px;
+    margin: 0;
+    background: transparent;
+    color: #ddd;
+}
