@@ -1,12 +1,19 @@
 .ih_dash_search {
     width: 100%;
     margin-bottom: 10px;
+    background-color: #9992;
+    border-radius: 3px;
 }
 .ih_filter_btn {
     cursor:pointer;
     display:inline-block;
     margin-left: 5px;
-    
+}
+
+.ih_sort_btn {
+    cursor: pointer;
+    display: inline-block;
+    margin-left: 5px;
 }
 .ih_lightgrey {
     background: #a6aaac;
@@ -19,6 +26,10 @@
 }
 .ih_filters {
     text-align: right;
+    margin-bottom: 5px;
+}
+.ih_sort {
+    text-align: right;
     margin-bottom: 10px;
 }
 .ih_dash_search_input {
@@ -30,11 +41,12 @@
     font-family: var(--itchio_default_font, Lato),sans-serif;
     box-sizing: border-box;
     flex: 1;
-    border: 1px solid #fff5;
+    border: 1px solid #fff0;
     padding: 4px 4px 4px 10px;
     font-size: 14px;
     height: 30px;
     margin: 0;
     background: transparent;
     color: #ddd;
+    
 }

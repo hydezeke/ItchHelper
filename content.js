@@ -1,42 +1,48 @@
 $(function(){
     let localStorage = window.localStorage;
+
+    let gameDataCache = {};
+
+    function getGameData(game_row_elem){
+        return new Promise(function(resolve){
+            let data = {};
+            data.title = game_row_elem.find(".game_link").text();
+            data.id = game_row_elem.find(".game_links").find("a").first().attr("href").split("/").pop();
+            resolve(data);
+        });
+        
+    }
+
     function saveLocalStorage(){
         let data = {
             "ih_text_filter":searchinput.val(),
-            "filter":filter
+            "filter":filter,
+            "ih_gameDataCache":gameDataCache,
+            "ih_sorting":sorting
         };
         data.ih_filter = filter;
         chrome.storage.local.set(data);
-        console.log("Saved local storage..."+searchinput.text());
     }
     function loadLocalStorage(){
         let txt = localStorage.getItem("ih_text_filter") ?? "";
-        chrome.storage.local.get(["ih_text_filter", "filter"], function(result){
-            console.log(result);
+        chrome.storage.local.get(["ih_text_filter", "filter", "ih_gameDataCache", "ih_sorting"], function(result){
             if(result.filter != null){
                 for(let f in result.filter){
                     filter[f] = result.filter[f];
                 }
+            }
+            if(result.ih_gameDataCache != null){
+                gameDataCache = result.ih_gameDataCache;
+            }
+            if(result.ih_sorting != null){
+                sorting = result.ih_sorting;
             }
 
             refreshDashboard({instant:true});
         });
         return;
         
-        searchinput.text(txt);
-        filter_published = localStorage.getItem("ih_filter_published");
-        if(filter_published == null) filter_published = true;
-        filter_restricted = localStorage.getItem("ih_filter_restricted");
-        if(filter_restricted == null) filter_restricted = true;
-        filter_draft = localStorage.getItem("ih_filter_draft");
-        if(filter_draft == null) filter_draft = true;
-
-        console.log("Loaded local storage..."+txt);
     }
-
-
-    
-    console.log("Jquery loaded on extension!");
 
     const filter_btns = {
         published: $(`<div class="publish_status ih_filter_btn"><span class="tag_bubble green"><a href="#">Published</a></span></div>`),
@@ -51,10 +57,39 @@ $(function(){
     };
     for(let f in filter_btns){
         filter[f] = true;
+        // if(f == "mine"){
+        //     filter_buttons.append("<span>&nbsp;&nbsp;&nbsp;  &nbsp;</span>");
+        // }
         filter_buttons.append(filter_btns[f]);
         let ff = f;
-        filter_btns[f].on("click", function(){
+        filter_btns[f].on("click", function(event){
+            event.preventDefault();
             filter[ff] = !filter[ff];
+            refreshDashboard();
+        });
+    }
+
+    let arrow_down = "▼";
+    let arrow_up = "▲";
+    let sort_buttons = $(`<div class="ih_sort"><span style="opacity: 0.5;">Sort:</span></div>`);
+    let sort_elems = {
+        "alpha": $(`<div class="publish_status ih_sort_btn"><span class="tag_bubble ih_lightgrey"><a href="#">Alphabetical</a><span class="arrow"></span></span></div>`),
+        "created": $(`<div class="publish_status ih_sort_btn"><span class="tag_bubble ih_lightgrey"><a href="#">Date Created</a><span class="arrow"></span></span></div>`)
+    }
+    let sorting = {
+        "type":"alpha",
+        "descending":true
+    };
+    for(let s in sort_elems){
+        sort_buttons.append(sort_elems[s]);
+        sort_elems[s].on("click", function(event){
+            event.preventDefault();
+            if(sorting.type == s){
+                sorting.descending = !sorting.descending;
+            }
+            else{
+                sorting.type = s;
+            }
             refreshDashboard();
         });
     }
@@ -64,9 +99,58 @@ $(function(){
         let val = searchinput.val();
         val = val.replaceAll(" ","");
         val = val.toLowerCase();
-        $(".game_row").each(function(index, elem){
+
+        let games = [];
+
+        function sortGames(){
+            
+            games.sort(function(game_a, game_b){
+                let n = 0;
+                switch(sorting.type){
+                    case "created":
+                        n = game_b.data.id - game_a.data.id;
+                        break;
+                    case "alpha":
+                    default:
+                        n = game_a.data.original_index - game_b.data.original_index;
+                        break;
+                }
+                if(!sorting.descending){
+                    n = -n;
+                }
+                return n;
+            });
+            let gamelist = $(".game_list");
+            for(let i = games.length-1; i >= 0; i--){
+                gamelist.prepend(games[i].elem);
+            }
+        }
+
+        let gamerows = $(".game_row");
+
+        gamerows.each(async function(index, elem){
             let game = $(elem);
             let title = game.find(".game_link");
+
+            let url = title.attr("href");
+
+            let data = await getGameData(game);
+            if($(elem).attr("ih_ind")){
+                data.original_index = parseInt($(elem).attr("ih_ind"));
+            }
+            else{
+                $(elem).attr("ih_ind", index);
+                data.original_index = index;
+            }
+            let gdata = {
+                "elem":game,
+                "data":data
+            }
+            games.push(gdata);
+            if(games.length == gamerows.length){
+                sortGames();
+            }
+            
             let text = title.text();
             text = text.replaceAll(" ", "");
             text = text.toLowerCase();
@@ -103,7 +187,23 @@ $(function(){
 
         for(let f in filter_btns){
             if(filter[f]) filter_btns[f].css("opacity", 1);
-            else filter_btns[f].css("opacity", 0.4);
+            else filter_btns[f].css("opacity", 0.55);
+        }
+
+        for(let s in sort_elems){
+            if(sorting.type == s){
+                if(sorting.descending){
+                    sort_elems[s].find(".arrow").text(arrow_down);
+                }
+                else{
+                    sort_elems[s].find(".arrow").text(arrow_up);
+                }
+                sort_elems[s].css("opacity",1);
+            }
+            else{
+                sort_elems[s].find(".arrow").text("");
+                sort_elems[s].css("opacity", 0.7);
+            }
         }
         
     }
@@ -118,6 +218,7 @@ $(function(){
     let leftCol = $(`.left_col`);
     if(leftCol.length){
         leftCol = leftCol.first();
+        leftCol.prepend(sort_buttons);
         leftCol.prepend(filter_buttons);
         leftCol.prepend(search);
         setTimeout(function(){
@@ -130,4 +231,3 @@ $(function(){
     }
     loadLocalStorage();
 });
-console.log("Extension!");
